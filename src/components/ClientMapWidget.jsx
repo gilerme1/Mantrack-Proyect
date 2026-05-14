@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react'
+import React, { useCallback, useEffect, useRef, useState, useContext } from 'react'
 import L from 'leaflet'
 import { clientsAPI } from '../lib/api.js'
 import { ThemeContext } from '../App.jsx'
@@ -21,13 +21,17 @@ function clientColor(c) {
   return STATUS_COLOR.ok
 }
 
-export default function ClientMapWidget() {
-  const mapRef    = useRef(null)
-  const mapInst   = useRef(null)
-  const { theme } = useContext(ThemeContext)
+export default function ClientMapWidget({ onOpenClient }) {
+  const mapRef         = useRef(null)
+  const mapInst        = useRef(null)
+  const boundsRef      = useRef(null)
+  const onOpenClientRef = useRef(onOpenClient)
+  const { theme }      = useContext(ThemeContext)
   const [places,  setPlaces]    = useState([])
   const [loading, setLoading]   = useState(true)
   const tileLayerRef = useRef(null)
+
+  useEffect(() => { onOpenClientRef.current = onOpenClient }, [onOpenClient])
 
   useEffect(() => {
     clientsAPI.list().then(data => {
@@ -35,6 +39,7 @@ export default function ClientMapWidget() {
         ...(c.lat && c.lng ? [{
           id: `${c.id}-main`,
           kind: 'client',
+          clientId: c.id,
           name: c.name,
           clientName: c.name,
           sector: c.sector,
@@ -47,6 +52,7 @@ export default function ClientMapWidget() {
         ...((c.locations || []).filter(l => l.lat && l.lng).map(l => ({
           id: l.id,
           kind: 'place',
+          clientId: c.id,
           name: l.name,
           type: l.type,
           clientName: c.name,
@@ -92,7 +98,7 @@ export default function ClientMapWidget() {
     }).addTo(map)
 
     withCoords.forEach(c => {
-      const color = c.kind === 'place' ? '#1DB954' : clientColor(c)
+      const color = c.kind === 'place' ? '#6366f1' : clientColor(c)
       const icon = L.divIcon({
         className: '',
         html: `<div style="width:12px;height:12px;border-radius:${c.kind === 'place' ? '4px' : '50%'};background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>`,
@@ -110,13 +116,29 @@ export default function ClientMapWidget() {
             <span style="color:#22C55E">${c.active} activos</span>
             ${c.overdue > 0 ? ` · <span style="color:#EF4444">${c.overdue} vencidos</span>` : ''}
           </p>
+          <button data-client-id="${c.clientId}" style="margin-top:8px;width:100%;padding:5px 0;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+            Ver cliente →
+          </button>
         </div>
       `, { maxWidth: 220 })
     })
 
+    map.on('popupopen', (e) => {
+      const btn = e.popup.getElement()?.querySelector('[data-client-id]')
+      if (btn) {
+        btn.onclick = () => {
+          map.closePopup()
+          onOpenClientRef.current?.(btn.dataset.clientId)
+        }
+      }
+    })
+
     if (withCoords.length > 1) {
       const bounds = L.latLngBounds(withCoords.map(c => [c.lat, c.lng]))
+      boundsRef.current = bounds
       map.fitBounds(bounds, { padding: [30, 30] })
+    } else if (withCoords.length === 1) {
+      boundsRef.current = null
     }
 
     return () => { map.remove(); mapInst.current = null }
@@ -133,6 +155,16 @@ export default function ClientMapWidget() {
 
   const withCoords = places.filter(c => c.lat && c.lng)
 
+  const handleCenter = useCallback(() => {
+    const map = mapInst.current
+    if (!map) return
+    if (boundsRef.current) {
+      map.fitBounds(boundsRef.current, { padding: [30, 30] })
+    } else if (withCoords.length === 1) {
+      map.setView([withCoords[0].lat, withCoords[0].lng], 10)
+    }
+  }, [withCoords])
+
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
@@ -140,15 +172,35 @@ export default function ClientMapWidget() {
           <p style={{ fontSize: 13, fontWeight: 600 }}>Mapa de clientes y lugares</p>
           <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{withCoords.length} puntos ubicados</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLOR.ok }} />
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cliente</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 3, background: '#1DB954' }} />
+            <div style={{ width: 8, height: 8, borderRadius: 3, background: '#6366f1' }} />
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Lugar</span>
           </div>
+          {!loading && withCoords.length > 0 && (
+            <button
+              onClick={handleCenter}
+              title="Centrar mapa"
+              style={{
+                marginLeft: 4,
+                padding: '4px 10px',
+                fontSize: 11,
+                fontWeight: 600,
+                background: 'var(--surface-hover)',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                lineHeight: 1,
+              }}
+            >
+              Centrar
+            </button>
+          )}
         </div>
       </div>
 

@@ -126,6 +126,10 @@ export default function App() {
     setAutoOpenEquipId(id)
     navigate('equipment')
   }
+  const openClientFromDashboard = (id) => {
+    setAutoOpenClientId(id)
+    navigate('clients')
+  }
   const openReportFromDashboard = (id) => {
     setAutoOpenReportId(id)
     navigate('reports')
@@ -170,6 +174,7 @@ export default function App() {
         : <Dashboard
             setActive={navigate}
             onOpenEquipment={openEquipmentFromDashboard}
+            onOpenClient={openClientFromDashboard}
             onOpenReport={openReportFromDashboard}
             onOpenReportMonth={openReportsForMonth}
           />

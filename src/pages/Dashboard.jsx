@@ -208,7 +208,7 @@ function MaintenanceTrendPanel({ data, growthPct, onClick, onMonthClick }) {
   )
 }
 
-export default function Dashboard({ setActive, onOpenEquipment, onOpenReport, onOpenReportMonth }) {
+export default function Dashboard({ setActive, onOpenEquipment, onOpenReport, onOpenReportMonth, onOpenClient }) {
   const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
@@ -305,7 +305,7 @@ export default function Dashboard({ setActive, onOpenEquipment, onOpenReport, on
       {/* Mapa + widgets */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, alignItems: 'stretch', minHeight: 400 }}>
         <Suspense fallback={<div className="card skeleton" style={{ minHeight: 400 }} />}>
-          <ClientMapWidget />
+          <ClientMapWidget onOpenClient={onOpenClient} />
         </Suspense>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <WeatherWidget />
