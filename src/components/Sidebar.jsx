@@ -67,7 +67,7 @@ export default function Sidebar({ active, setActive, collapsed }) {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}>{branding.appName}</span>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: -1, letterSpacing: '.03em', fontWeight: 500 }}>v1.0</p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: -1, letterSpacing: '.03em', fontWeight: 500 }}>v1.1</p>
           </div>
         )}
       </div>

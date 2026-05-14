@@ -96,7 +96,7 @@ export default function QRFieldView({ qrId, setActive }) {
   if (qr.equipment) {
     const eq = qr.equipment
     return (
-      <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520, margin: '0 auto' }}>
+      <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Status bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--success-soft)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 10 }}>
           <Icon path={ICONS.check} size={14} stroke="var(--success)" strokeWidth={2.5} />
@@ -175,7 +175,7 @@ export default function QRFieldView({ qrId, setActive }) {
 
   /* ── UNASSIGNED: create or link equipment ── */
   return (
-    <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520, margin: '0 auto' }}>
+    <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Header */}
       <div style={{ background: 'var(--warning-soft)', border: '1px solid rgba(245,158,11,.25)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>

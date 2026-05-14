@@ -50,7 +50,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="animate-up" style={{ padding: 28, maxWidth: 720 }}>
+    <div className="animate-up" style={{ padding: 28 }}>
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.03em' }}>Configuración</h2>
         <p style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 4 }}>Personaliza la apariencia y plantillas de la aplicación.</p>

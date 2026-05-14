@@ -21,8 +21,99 @@ const STEPS = [
   { label: 'Fotos',     icon: ICONS.camera    },
 ]
 
+const PHOTO_MAX_EDGE = 1600
+const PHOTO_WEBP_QUALITY = 0.78
+const PHOTO_MAX_SOURCE_SIZE = 30 * 1024 * 1024
+
 function safeParseJson(str, fallback) {
   try { return str ? JSON.parse(str) : fallback } catch { return fallback }
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return ''
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${bytes} B`
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise(resolve => canvas.toBlob(resolve, type, quality))
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = e => resolve(e.target.result)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+function loadImageFromFile(file) {
+  const objectUrl = URL.createObjectURL(file)
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('No se pudo leer la imagen'))
+    }
+    img.src = objectUrl
+  })
+}
+
+async function decodeImage(file) {
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(file, { imageOrientation: 'from-image' })
+    } catch {
+      // Some mobile browsers do not support options for createImageBitmap.
+    }
+  }
+  return loadImageFromFile(file)
+}
+
+async function compressPhoto(file) {
+  if (!file.type.startsWith('image/')) return null
+  if (file.size > PHOTO_MAX_SOURCE_SIZE) {
+    throw new Error(`${file.name} supera ${formatFileSize(PHOTO_MAX_SOURCE_SIZE)}.`)
+  }
+
+  const image = await decodeImage(file)
+  const sourceWidth = image.width
+  const sourceHeight = image.height
+  const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(sourceWidth, sourceHeight))
+  const width = Math.max(1, Math.round(sourceWidth * scale))
+  const height = Math.max(1, Math.round(sourceHeight * scale))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d', { alpha: false })
+  ctx.drawImage(image, 0, 0, width, height)
+  image.close?.()
+
+  let blob = await canvasToBlob(canvas, 'image/webp', PHOTO_WEBP_QUALITY)
+  let mimeType = 'image/webp'
+  if (!blob) {
+    blob = await canvasToBlob(canvas, 'image/jpeg', 0.82)
+    mimeType = 'image/jpeg'
+  }
+  if (!blob) throw new Error(`No se pudo convertir ${file.name}.`)
+
+  return {
+    dataUrl: await blobToDataUrl(blob),
+    caption: '',
+    name: file.name,
+    mimeType,
+    originalSize: file.size,
+    size: blob.size,
+    width,
+    height,
+  }
 }
 
 export default function ReportWizard({ onClose, onSaved, prefillEquipId, editingReport }) {
@@ -47,6 +138,7 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
   const [templateId, setTemplateId] = useState('')
   const [checklist,  setChecklist]  = useState({})
   const [photos,     setPhotos]     = useState([])
+  const [processingPhotos, setProcessingPhotos] = useState(false)
   const [notes,      setNotes]      = useState('')
 
   useEffect(() => {
@@ -80,12 +172,23 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
 
   const selectedTemplate = templates.find(t => t.id === templateId)
 
-  const handlePhotoFile = (file) => {
-    if (!file || !file.type.startsWith('image/')) return
-    if (file.size > 3 * 1024 * 1024) { alert('Imagen máx. 3 MB'); return }
-    const reader = new FileReader()
-    reader.onload = e => setPhotos(p => [...p, { dataUrl: e.target.result, caption: '' }])
-    reader.readAsDataURL(file)
+  const handlePhotoFiles = async (fileList) => {
+    const files = Array.from(fileList || []).filter(file => file.type.startsWith('image/'))
+    if (!files.length) return
+    setProcessingPhotos(true)
+    setError(null)
+    try {
+      const converted = []
+      for (const file of files) {
+        const photo = await compressPhoto(file)
+        if (photo) converted.push(photo)
+      }
+      setPhotos(p => [...p, ...converted])
+    } catch (err) {
+      setError(err.message || 'No se pudieron procesar las imágenes.')
+    } finally {
+      setProcessingPhotos(false)
+    }
   }
 
   const handleSave = async () => {
@@ -351,6 +454,11 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
               {photos.map((p, i) => (
                 <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface-hover)' }}>
                   <img src={p.dataUrl} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
+                  {(p.size || p.originalSize) && (
+                    <div style={{ position: 'absolute', left: 5, top: 5, borderRadius: 999, background: 'rgba(0,0,0,.64)', color: 'white', fontSize: 9.5, fontWeight: 700, padding: '2px 6px', letterSpacing: 0 }}>
+                      {p.mimeType === 'image/webp' ? 'WEBP' : 'IMG'} · {formatFileSize(p.size || p.originalSize)}
+                    </div>
+                  )}
                   <input
                     placeholder="Descripción"
                     value={p.caption}
@@ -367,19 +475,24 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
               ))}
               {/* Add photo button */}
               <div
-                onClick={() => photoInputRef.current.click()}
-                style={{ aspectRatio: '4/3', border: '2px dashed var(--border-light)', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', background: 'var(--surface-hover)', transition: 'border-color .15s' }}
+                onClick={() => !processingPhotos && photoInputRef.current.click()}
+                style={{ aspectRatio: '4/3', border: '2px dashed var(--border-light)', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: processingPhotos ? 'wait' : 'pointer', background: 'var(--surface-hover)', transition: 'border-color .15s', opacity: processingPhotos ? .7 : 1 }}
                 onTouchStart={e => e.currentTarget.style.borderColor = 'var(--accent)'}
                 onTouchEnd={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
               >
-                <Icon path={ICONS.camera} size={isMobile ? 24 : 20} stroke="var(--text-muted)" />
-                <span style={{ fontSize: isMobile ? 12 : 10.5, color: 'var(--text-muted)', textAlign: 'center' }}>Agregar foto</span>
+                {processingPhotos
+                  ? <div className="spin" style={{ width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%' }} />
+                  : <Icon path={ICONS.camera} size={isMobile ? 24 : 20} stroke="var(--text-muted)" />
+                }
+                <span style={{ fontSize: isMobile ? 12 : 10.5, color: 'var(--text-muted)', textAlign: 'center' }}>
+                  {processingPhotos ? 'Optimizando...' : 'Agregar foto'}
+                </span>
               </div>
             </div>
             <input ref={photoInputRef} type="file" accept="image/*" multiple capture="environment" style={{ display: 'none' }}
-              onChange={e => Array.from(e.target.files).forEach(handlePhotoFile)} />
+              onChange={e => { handlePhotoFiles(e.target.files); e.target.value = '' }} />
           </div>
 
           {error && (
@@ -412,7 +525,7 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || processingPhotos}
             style={{ height: isMobile ? 44 : undefined, minWidth: isMobile ? 140 : undefined }}
           >
             {saving
