@@ -1,0 +1,26 @@
+[  466159ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=073ebdd1:21550
+[  466569ms] TypeError: Cannot read properties of undefined (reading '_leaflet_pos')
+    at getPosition (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:1570:19)
+    at NewClass._getMapPanePos (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:2989:18)
+    at NewClass._getNewPixelOrigin (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:3001:76)
+    at NewClass._move (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:2806:36)
+    at NewClass._onZoomTransitionEnd (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:3152:16)
+[  729531ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:559
+[  729535ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  730541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  731543ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  732547ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  733551ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  734555ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  735561ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  736564ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  737568ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  738572ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  739578ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  741000ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=073ebdd1:21550
+[  741576ms] TypeError: Cannot read properties of undefined (reading '_leaflet_pos')
+    at getPosition (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:1570:19)
+    at NewClass._getMapPanePos (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:2989:18)
+    at NewClass._getNewPixelOrigin (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:3001:76)
+    at NewClass._move (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:2806:36)
+    at NewClass._onZoomTransitionEnd (http://localhost:5173/node_modules/.vite/deps/leaflet.js?v=073ebdd1:3152:16)

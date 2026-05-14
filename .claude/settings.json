@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma *)",
+      "Bash(node -e ' *)",
+      "Bash(node prisma/seed.js)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(sleep 3 && cat /tmp/manttrack-dev.log | tail -20)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@empresa.com\",\"password\":\"admin123\"}')",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(r[0],null,2\\)\\)}\\)\")",
+      "Bash(pkill -f \"server/index.js\")",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);r.forEach\\(c=>console.log\\(c.name,'lat:',c.lat,'address:',c.address\\)\\)}\\)\")",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);console.log\\('KPIs:',JSON.stringify\\(r.kpis\\)\\);console.log\\('ByStatus:',JSON.stringify\\(r.equipmentByStatus\\)\\)}\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('token ok:', bool\\(d.get\\('token'\\)\\)\\); tok=d.get\\('token',''\\); import subprocess; r=subprocess.run\\(['curl','-s','http://localhost:3001/api/templates','-H',f'Authorization: Bearer {tok}'], capture_output=True, text=True\\); templates=json.loads\\(r.stdout\\); print\\('templates count:', len\\(templates\\)\\); print\\('first:', templates[0]['name'] if templates else 'none'\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'  {d[\\\\\"total\\\\\"]} reportes'\\)\")",
+      "Bash(node --input-type=module --eval ' *)",
+      "Read(//Users/andresartemov/Documents/Claude/**)",
+      "Bash(zip -r MantTrack-para-compartir.zip . --exclude */node_modules/* --exclude */dist/* --exclude */.git/* --exclude */MantTrack-para-compartir.zip --exclude '*/{src')",
+      "Bash(sort -k7 -n -r)",
+      "Bash(zipinfo -t MantTrack-para-compartir.zip)",
+      "Bash(zipinfo MantTrack-para-compartir.zip)"
+    ]
+  }
+}

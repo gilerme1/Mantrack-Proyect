@@ -1,0 +1,181 @@
+// ─── MantTrack Single-Tenant · Prisma Schema ─────────────────────────────
+// Sin modelo Tenant. SQLite local por defecto, PostgreSQL en producción.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("TECH")
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports   Report[]
+  assignments EquipmentAssignment[]
+}
+
+// ─── Client ───────────────────────────────────────────────────────────────
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  sector    String?
+  address   String?
+  contact   String?
+  phone     String?
+  lat       Float?
+  lng       Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  equipment Equipment[]
+  locations ClientLocation[]
+}
+
+// ─── ClientLocation ───────────────────────────────────────────────────────
+model ClientLocation {
+  id        String   @id @default(cuid())
+  name      String
+  type      String?
+  address   String?
+  notes     String?
+  lat       Float?
+  lng       Float?
+  clientId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  equipment Equipment[]
+
+  @@index([clientId])
+}
+
+// ─── Equipment ────────────────────────────────────────────────────────────
+model Equipment {
+  id        String   @id @default(cuid())
+  name      String
+  model     String?
+  serial    String?
+  plate     String?
+  location  String?
+  status    String   @default("ACTIVE")
+  lastMaint DateTime?
+  nextMaint DateTime?
+  clientId  String
+  locationId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  place     ClientLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reports   Report[]
+  openQR    OpenQR?
+  assignments EquipmentAssignment[]
+
+  @@index([clientId])
+  @@index([locationId])
+  @@index([status])
+}
+
+model EquipmentAssignment {
+  id          String   @id @default(cuid())
+  userId      String
+  equipmentId String
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, equipmentId])
+  @@index([userId])
+  @@index([equipmentId])
+}
+
+// ─── OpenQR ───────────────────────────────────────────────────────────────
+// QR codes generated without an equipment assigned yet.
+// Printed as blank labels, then assigned in the field when scanned.
+model OpenQR {
+  id          String    @id @default(cuid())
+  label       String?
+  equipmentId String?   @unique
+  createdAt   DateTime  @default(now())
+  assignedAt  DateTime?
+
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+}
+
+// ─── Report ───────────────────────────────────────────────────────────────
+model Report {
+  id            String   @id @default(cuid())
+  type          String
+  status        String   @default("COMPLETED")
+  notes         String?
+  duration      Int?
+  techId        String
+  equipmentId   String
+  templateId    String?
+  checklistJson String?
+  photosJson    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tech      User      @relation(fields: [techId],      references: [id])
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  template  Template? @relation(fields: [templateId],  references: [id])
+
+  @@index([equipmentId])
+  @@index([createdAt])
+}
+
+// ─── Template ─────────────────────────────────────────────────────────────
+model Template {
+  id            String            @id @default(cuid())
+  name          String
+  industry      String            @default("GENERAL")
+  equipmentType String?
+  reportType    String            @default("MAINTENANCE")
+  isSystem      Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  sections  TemplateSection[]
+  reports   Report[]
+}
+
+model TemplateSection {
+  id         String         @id @default(cuid())
+  templateId String
+  title      String
+  order      Int            @default(0)
+
+  template   Template       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  items      TemplateItem[]
+
+  @@index([templateId])
+}
+
+model TemplateItem {
+  id        String          @id @default(cuid())
+  sectionId String
+  label     String
+  type      String          @default("CHECK")
+  required  Boolean         @default(false)
+  order     Int             @default(0)
+
+  section   TemplateSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────
+// SQLite no soporta enums nativos en Prisma. Los valores se validan en la aplicación.
