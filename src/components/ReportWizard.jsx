@@ -171,6 +171,8 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
   }, [type])
 
   const selectedTemplate = templates.find(t => t.id === templateId)
+  const selectedEquipment = equipment.find(e => e.id === equipId) || editingReport?.equipment
+  const fixedEquipment = !!prefillEquipId && !editingReport
 
   const handlePhotoFiles = async (fileList) => {
     const files = Array.from(fileList || []).filter(file => file.type.startsWith('image/'))
@@ -263,13 +265,27 @@ export default function ReportWizard({ onClose, onSaved, prefillEquipId, editing
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="field">
             <label className="label">Equipo *</label>
-            <Select value={equipId} onValueChange={setEquipId} placeholder="Seleccionar equipo...">
-              {equipment.map(e => (
-                <SelectItem key={e.id} value={e.id}>
-                  {[e.name, e.plate && `Matr. ${e.plate}`, e.serial && `#${e.serial}`, e.client?.name].filter(Boolean).join(' — ')}
-                </SelectItem>
-              ))}
-            </Select>
+            {fixedEquipment ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 12px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-hover)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon path={ICONS.equipment} size={15} stroke="var(--accent)" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedEquipment?.name || 'Equipo seleccionado'}</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {[selectedEquipment?.plate && `Matr. ${selectedEquipment.plate}`, selectedEquipment?.serial && `#${selectedEquipment.serial}`, selectedEquipment?.client?.name].filter(Boolean).join(' — ') || 'Reporte asociado automáticamente'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Select value={equipId} onValueChange={setEquipId} placeholder="Seleccionar equipo...">
+                {equipment.map(e => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {[e.name, e.plate && `Matr. ${e.plate}`, e.serial && `#${e.serial}`, e.client?.name].filter(Boolean).join(' — ')}
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
           </div>
           <div className="field">
             <label className="label">Técnico *</label>

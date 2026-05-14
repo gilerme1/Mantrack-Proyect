@@ -7,6 +7,8 @@ import { Icon, ICONS, StatusBadge, Modal } from '../components/UI.jsx'
 import { Select, SelectItem } from '../components/Primitives.jsx'
 import { openQRAPI, clientsAPI, equipmentAPI } from '../lib/api.js'
 import ReportWizard from '../components/ReportWizard.jsx'
+import ReportDetail from '../components/ReportDetail.jsx'
+import { REPORT_TYPE_LABEL } from '../lib/reportMeta.js'
 
 const SECTORS = ['Manufactura','Transporte','Minería','Alimentos','Salud','Construcción','Energía','Retail','Otro']
 
@@ -18,6 +20,9 @@ export default function QRFieldView({ qrId, setActive }) {
   const [mode,         setMode]         = useState('view')  // 'view' | 'create' | 'link'
   const [saving,       setSaving]       = useState(false)
   const [showWizard,   setShowWizard]   = useState(false)
+  const [fullEquipment,setFullEquipment]= useState(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [viewReportId, setViewReportId] = useState(null)
 
   // Create form
   const [form, setForm] = useState({
@@ -37,9 +42,29 @@ export default function QRFieldView({ qrId, setActive }) {
     ]).then(([q, c]) => {
       setQR(q)
       setClients(c)
+      if (q.equipment?.id) refreshEquipmentHistory(q.equipment.id)
     }).catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [qrId])
+
+  const refreshEquipmentHistory = async (equipmentId) => {
+    setHistoryLoading(true)
+    try {
+      const eq = await equipmentAPI.get(equipmentId)
+      setFullEquipment(eq)
+      setQR(q => q?.equipment?.id === equipmentId ? { ...q, equipment: { ...q.equipment, ...eq, _count: { reports: eq.reports?.length ?? q.equipment?._count?.reports ?? 0 } } } : q)
+      return eq
+    } catch {
+      return null
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const formatReportDate = (value) => {
+    if (!value) return '—'
+    return new Date(value).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: '2-digit' })
+  }
 
   const loadEquipment = async () => {
     const res = await equipmentAPI.list()
@@ -94,7 +119,8 @@ export default function QRFieldView({ qrId, setActive }) {
 
   /* ── ASSIGNED: show equipment detail ── */
   if (qr.equipment) {
-    const eq = qr.equipment
+    const eq = fullEquipment || qr.equipment
+    const reports = eq.reports || []
     return (
       <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Status bar */}
@@ -123,7 +149,7 @@ export default function QRFieldView({ qrId, setActive }) {
               { l: 'N° Serie',    v: eq.serial   ? `#${eq.serial}` : '—' },
               { l: 'Matrícula',   v: eq.plate    || '—' },
               { l: 'Ubicación',   v: eq.location || '—' },
-              { l: 'Reportes',    v: eq._count?.reports ?? '—' },
+              { l: 'Reportes',    v: eq._count?.reports ?? reports.length ?? '—' },
             ].map(f => (
               <div key={f.l} style={{ background: 'var(--bg)', borderRadius: 10, padding: '10px 12px' }}>
                 <p style={{ fontSize: 10.5, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 3 }}>{f.l}</p>
@@ -161,13 +187,55 @@ export default function QRFieldView({ qrId, setActive }) {
           </div>
         </div>
 
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '16px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 800 }}>Historial de reportes</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{reports.length ? `Últimos ${reports.length} registros de este equipo` : 'Todavía no hay reportes cargados'}</p>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => refreshEquipmentHistory(eq.id)} disabled={historyLoading}>
+              <Icon path={ICONS.refresh} size={13} /> Actualizar
+            </button>
+          </div>
+          {historyLoading && !reports.length ? (
+            <div className="skeleton" style={{ height: 58, borderRadius: 10 }} />
+          ) : reports.length === 0 ? (
+            <div style={{ padding: '18px 12px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: 12 }}>
+              <Icon path={ICONS.reports} size={22} stroke="var(--text-muted)" />
+              <p style={{ fontSize: 13, marginTop: 8 }}>El historial va a aparecer acá cuando se guarden reportes.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {reports.map(report => (
+                <button
+                  key={report.id}
+                  className="btn btn-ghost"
+                  onClick={() => setViewReportId(report.id)}
+                  style={{ width: '100%', justifyContent: 'flex-start', padding: '10px 12px', height: 'auto', borderRadius: 10 }}
+                >
+                  <Icon path={ICONS.reports} size={14} />
+                  <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                    <p style={{ fontSize: 13, fontWeight: 700 }}>{REPORT_TYPE_LABEL[report.type] || report.type}</p>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{[report.tech?.name, formatReportDate(report.createdAt)].filter(Boolean).join(' · ')}</p>
+                  </div>
+                  <StatusBadge status={report.status} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Report wizard */}
         <Modal open={showWizard} onClose={() => setShowWizard(false)} title="Nuevo reporte" maxWidth={580}>
           <ReportWizard
             prefillEquipId={eq.id}
             onClose={() => setShowWizard(false)}
-            onSaved={() => setShowWizard(false)}
+            onSaved={() => { setShowWizard(false); refreshEquipmentHistory(eq.id) }}
           />
+        </Modal>
+
+        <Modal open={!!viewReportId} onClose={() => setViewReportId(null)} title="Detalle del reporte" maxWidth={620}>
+          {viewReportId && <ReportDetail reportId={viewReportId} onClose={() => setViewReportId(null)} />}
         </Modal>
       </div>
     )

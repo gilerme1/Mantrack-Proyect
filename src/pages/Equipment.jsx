@@ -3,6 +3,9 @@ import { Icon, ICONS, StatusBadge, SearchInput, Modal, EmptyState, ConfirmDialog
 import { Select, SelectItem } from '../components/Primitives.jsx'
 import { equipmentAPI, clientsAPI, openQRAPI } from '../lib/api.js'
 import { EquipmentQRCanvas, equipmentQRUrl, legacyEquipmentQRUrl } from '../components/EquipmentQR.jsx'
+import ReportWizard from '../components/ReportWizard.jsx'
+import ReportDetail from '../components/ReportDetail.jsx'
+import { REPORT_TYPE_LABEL } from '../lib/reportMeta.js'
 import useIsMobile from '../hooks/useIsMobile.js'
 
 export default function Equipment({ selectedClient, setActive, setSelectedEquip, onClearSelectedClient, initialStatusFilter = 'all', autoOpenEquipId, onDeepLinkHandled }) {
@@ -16,6 +19,8 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
   const [showForm,  setShowForm]  = useState(false)
   const [editing,   setEditing]   = useState(null)
   const [viewItem,  setViewItem]  = useState(null)
+  const [reportEquip, setReportEquip] = useState(null)
+  const [viewReportId, setViewReportId] = useState(null)
   const [qrItem,    setQrItem]    = useState(null)
   const [confirm,   setConfirm]   = useState(null)
   const [saving,    setSaving]    = useState(false)
@@ -58,6 +63,12 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
 
   const openNew  = () => { setForm({ name:'', clientId:selectedClient?.id || '', locationId:'', model:'', serial:'', plate:'', location:'', status:'ACTIVE', generateQR:false, openQR:null }); setEditing(null); setShowForm(true) }
   const openEdit = (e) => { setForm({ name:e.name, clientId:e.clientId, locationId:e.locationId || e.place?.id || '', model:e.model||'', serial:e.serial||'', plate:e.plate||'', location:e.location||'', status:e.status, generateQR:false, openQR:e.openQR || null }); setEditing(e.id); setShowForm(true) }
+  const openDetail = async (eq) => {
+    setViewItem(eq)
+    if (!eq?.id || eq.reports) return
+    const full = await equipmentAPI.get(eq.id).catch(() => null)
+    if (full) setViewItem(full)
+  }
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.clientId) return
@@ -109,6 +120,11 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
   const getEquipmentQRLabel = (eq) => (
     eq?.openQR?.id ? 'QR asignado' : 'QR del equipo'
   )
+
+  const formatReportDate = (value) => {
+    if (!value) return '—'
+    return new Date(value).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: '2-digit' })
+  }
 
   const openQRModal = async (eq) => {
     const full = eq.openQR ? eq : await equipmentAPI.get(eq.id).catch(() => eq)
@@ -176,7 +192,7 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
         <button
           className="btn btn-ghost btn-sm"
           style={{ flex: 1, justifyContent: 'center', height: 38 }}
-          onClick={() => setViewItem(eq)}
+          onClick={() => openDetail(eq)}
         >
           <Icon path={ICONS.eye} size={13} /> Ver
         </button>
@@ -288,7 +304,7 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
               </thead>
               <tbody>
                 {equipment.map(eq => (
-                  <tr key={eq.id} onClick={() => setViewItem(eq)}>
+                  <tr key={eq.id} onClick={() => openDetail(eq)}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 32, height: 32, background: 'var(--accent-soft)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -362,6 +378,42 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
                 {!viewItem.openQR?.id && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>Compatible con Códigos QR → Por equipo.</p>}
               </div>
             </div>
+            <div style={{ background: 'var(--bg)', borderRadius: 10, padding: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700 }}>Historial de reportes</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{viewItem.reports?.length ? `Últimos ${viewItem.reports.length} registros` : 'Sin reportes todavía'}</p>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={() => setReportEquip(viewItem)}>
+                  <Icon path={ICONS.plus} size={13} stroke="white" /> Nuevo reporte
+                </button>
+              </div>
+              {!viewItem.reports ? (
+                <div className="skeleton" style={{ height: 52, borderRadius: 10 }} />
+              ) : viewItem.reports.length === 0 ? (
+                <div style={{ border: '1px dashed var(--border)', borderRadius: 10, padding: '14px 10px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12.5 }}>
+                  Los reportes asociados a este equipo van a aparecer acá.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 260, overflowY: 'auto' }}>
+                  {viewItem.reports.map(report => (
+                    <button
+                      key={report.id}
+                      className="btn btn-ghost"
+                      onClick={() => setViewReportId(report.id)}
+                      style={{ height: 'auto', justifyContent: 'flex-start', padding: '9px 10px', borderRadius: 9 }}
+                    >
+                      <Icon path={ICONS.reports} size={13} />
+                      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                        <p style={{ fontSize: 12.5, fontWeight: 700 }}>{REPORT_TYPE_LABEL[report.type] || report.type}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{[report.tech?.name, formatReportDate(report.createdAt)].filter(Boolean).join(' · ')}</p>
+                      </div>
+                      <StatusBadge status={report.status} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => openQRModal(viewItem)}>
                 <Icon path={ICONS.qr} size={14} /> Ver QR
@@ -372,6 +424,20 @@ export default function Equipment({ selectedClient, setActive, setSelectedEquip,
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal open={!!reportEquip} onClose={() => setReportEquip(null)} title="Nuevo reporte" maxWidth={580}>
+        {reportEquip && (
+          <ReportWizard
+            prefillEquipId={reportEquip.id}
+            onClose={() => setReportEquip(null)}
+            onSaved={() => { const id = reportEquip.id; setReportEquip(null); refreshEquipment(id); load() }}
+          />
+        )}
+      </Modal>
+
+      <Modal open={!!viewReportId} onClose={() => setViewReportId(null)} title="Detalle del reporte" maxWidth={620}>
+        {viewReportId && <ReportDetail reportId={viewReportId} onClose={() => setViewReportId(null)} />}
       </Modal>
 
       {/* Create / Edit form modal */}
