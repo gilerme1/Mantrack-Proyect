@@ -215,7 +215,7 @@ async function printLabels(equipmentList, logoSrc = null) {
 }
 
 // ─── Open QR section ─────────────────────────────────────────────────────────
-function OpenQRSection({ isMobile }) {
+function OpenQRSection({ isMobile, onOpenEquipment }) {
   const [openQRs,   setOpenQRs]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [generating,setGenerating]= useState(false)
@@ -421,14 +421,25 @@ function OpenQRSection({ isMobile }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {assigned.map(qr => (
               <div key={qr.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--success-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon path={ICONS.check} size={16} stroke="var(--success)" strokeWidth={2} />
+                <div style={{ padding: 4, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', flexShrink: 0 }}>
+                  <QRCanvas text={`${window.location.origin}/qr/${qr.id}`} size={isMobile ? 52 : 60} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qr.equipment?.name}</p>
-                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{qr.equipment?.client?.name}</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 6 }}>{qr.equipment?.client?.name}</p>
+                  <StatusBadge status={qr.equipment?.status} />
                 </div>
-                <StatusBadge status={qr.equipment?.status} />
+                {onOpenEquipment && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ flexShrink: 0, gap: 5 }}
+                    onClick={() => onOpenEquipment(qr.equipmentId)}
+                    title="Ver equipo"
+                  >
+                    <Icon path={ICONS.equipment} size={13} strokeWidth={2} />
+                    {!isMobile && 'Ver equipo'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -451,7 +462,7 @@ function OpenQRSection({ isMobile }) {
   )
 }
 
-export default function QRPage() {
+export default function QRPage({ onOpenEquipment }) {
   const [equipment, setEquipment] = useState([])
   const [search,    setSearch]    = useState('')
   const [printing,  setPrinting]  = useState(false)
@@ -536,7 +547,7 @@ export default function QRPage() {
       </div>
 
       {/* Open QRs tab */}
-      {tab === 'open' && <OpenQRSection isMobile={isMobile} />}
+      {tab === 'open' && <OpenQRSection isMobile={isMobile} onOpenEquipment={onOpenEquipment} />}
 
       {/* Equipment QRs tab */}
       {tab === 'equipment' && (

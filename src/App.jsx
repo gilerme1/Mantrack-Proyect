@@ -204,7 +204,14 @@ export default function App() {
           onAutoOpenHandled={() => setAutoOpenReportId(null)}
         />
       )}
-      {active === 'qr'         && <QRPage />}
+      {active === 'qr'         && (
+        <QRPage
+          onOpenEquipment={(id) => {
+            setAutoOpenEquipId(id)
+            navigate('equipment')
+          }}
+        />
+      )}
       {active === 'qr-field'   && (
         <QRFieldView
           qrId={deepLink?.type === 'qr' ? deepLink.id : null}
