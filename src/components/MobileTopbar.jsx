@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react'
 import { Icon, ICONS, Avatar } from './UI.jsx'
 import { ThemeContext } from '../App.jsx'
-import { BrandingContext } from '../lib/branding.js'
+import { BrandingContext, resolveLogoIcon } from '../lib/branding.js'
 
 const PAGE_TITLES = {
   dashboard: 'Trabajo de campo',
@@ -16,6 +16,7 @@ export default function MobileTopbar({ active, user, onLogout }) {
   const [showUser, setShowUser] = useState(false)
   const { theme, toggleTheme } = useContext(ThemeContext)
   const { branding } = useContext(BrandingContext)
+  const { src: iconSrc, filter: iconFilter } = resolveLogoIcon(branding, theme === 'dark')
 
   return (
     <header style={{
@@ -35,7 +36,7 @@ export default function MobileTopbar({ active, user, onLogout }) {
         <div style={{
           width: 28,
           height: 28,
-          background: 'var(--accent)',
+          background: iconSrc ? 'transparent' : 'var(--accent)',
           borderRadius: 8,
           display: 'flex',
           alignItems: 'center',
@@ -43,8 +44,8 @@ export default function MobileTopbar({ active, user, onLogout }) {
           flexShrink: 0,
           overflow: 'hidden',
         }}>
-          {branding.logoDataUrl
-            ? <img src={branding.logoDataUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          {iconSrc
+            ? <img src={iconSrc} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: iconFilter }} />
             : <Icon path={ICONS.wrench} size={13} stroke="white" strokeWidth={2} />
           }
         </div>

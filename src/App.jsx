@@ -17,12 +17,23 @@ const Reports    = lazy(() => import('./pages/Reports.jsx'))
 const QRPage     = lazy(() => import('./pages/QRPage.jsx'))
 const Settings   = lazy(() => import('./pages/Settings.jsx'))
 const QRFieldView = lazy(() => import('./pages/QRFieldView.jsx'))
+const PublicReportView = lazy(() => import('./pages/PublicReportView.jsx'))
 
 export const ThemeContext = React.createContext({ theme: 'dark', toggleTheme: () => {} })
 
 // Detect deep-links on first load
 function detectDeepLink() {
   const path = window.location.pathname
+  // /public/qr/:id → public latest report for an assigned Open QR
+  const publicQRMatch = path.match(/^\/public\/qr\/([^/]+)$/)
+  if (publicQRMatch) {
+    return { type: 'public-qr', id: publicQRMatch[1] }
+  }
+  // /public/equipo/:id → public latest report for a legacy equipment QR
+  const publicEquipMatch = path.match(/^\/public\/equipo\/([^/]+)$/)
+  if (publicEquipMatch) {
+    return { type: 'public-equipo', id: publicEquipMatch[1] }
+  }
   // /equipo/:id  → existing equipment (legacy QR)
   const equipMatch = path.match(/^\/equipo\/([^/]+)$/)
   if (equipMatch) {
@@ -236,7 +247,11 @@ export default function App() {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <BrandingContext.Provider value={{ branding, setBranding }}>
-        {!authChecked ? spinner : !user ? (
+        {!authChecked ? spinner : deepLink?.type?.startsWith('public-') ? (
+          <Suspense fallback={spinner}>
+            <PublicReportView link={deepLink} />
+          </Suspense>
+        ) : !user ? (
           <Login onLogin={setUser} />
         ) : isMobile ? (
           /* ── Mobile layout ── */

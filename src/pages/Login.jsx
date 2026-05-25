@@ -1,14 +1,18 @@
 import React, { useState, useContext } from 'react'
 import { Icon, ICONS } from '../components/UI.jsx'
 import { auth, setToken } from '../lib/api.js'
-import { BrandingContext } from '../lib/branding.js'
+import { BrandingContext, resolveLogoFull } from '../lib/branding.js'
 
 export default function Login({ onLogin }) {
-  const [email,    setEmail]    = useState('admin@empresa.com')
-  const [password, setPassword] = useState('admin123')
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState(null)
+  const [email,     setEmail]     = useState('admin@empresa.com')
+  const [password,  setPassword]  = useState('admin123')
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState(null)
+  const [logoError, setLogoError] = useState(false)
   const { branding } = useContext(BrandingContext)
+  const isDark = document.documentElement.dataset.theme === 'dark'
+  const { src: rawLogoSrc, filter: logoFilter } = resolveLogoFull(branding, isDark)
+  const logoSrc = logoError ? null : rawLogoSrc
 
   const handleSubmit = async (event) => {
     event?.preventDefault()
@@ -27,14 +31,21 @@ export default function Login({ onLogin }) {
       </div>
       <div className="animate-up" style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ width: 56, height: 56, background: branding.logoDataUrl ? 'transparent' : 'var(--accent)', borderRadius: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, overflow: 'hidden', boxShadow: branding.logoDataUrl ? 'none' : '0 0 30px rgba(99,102,241,.35)' }}>
-            {branding.logoDataUrl
-              ? <img src={branding.logoDataUrl} alt="logo" style={{ width: 56, height: 56, objectFit: 'contain' }} />
-              : <Icon path={ICONS.wrench} size={26} stroke="white" strokeWidth={2} />
-            }
-          </div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.04em', marginBottom: 6 }}>{branding.appName}</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{branding.appSlogan}</p>
+          {logoSrc ? (
+            <img
+              src={logoSrc}
+              alt="logo"
+              onError={() => setLogoError(true)}
+              style={{ maxWidth: 220, maxHeight: 120, objectFit: 'contain', display: 'block', margin: '0 auto', marginBottom: 18, filter: logoFilter }}
+            />
+          ) : (
+            <div style={{ width: 96, height: 96, background: 'var(--accent)', borderRadius: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, boxShadow: '0 0 40px rgba(99,102,241,.35)' }}>
+              <Icon path={ICONS.wrench} size={44} stroke="white" strokeWidth={1.8} />
+            </div>
+          )}
+          {branding.appSlogan && (
+            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{branding.appSlogan}</p>
+          )}
         </div>
         <div className="card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 20 }}>Iniciar sesión</h2>

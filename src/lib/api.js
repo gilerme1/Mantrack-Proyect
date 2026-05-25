@@ -1,5 +1,5 @@
 // src/lib/api.js
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : '/api')
 const OFFLINE_QUEUE_KEY = 'mt_offline_queue'
 
 let _token = localStorage.getItem('mt_token') || null
@@ -78,6 +78,13 @@ async function req(method, path, body) {
   return data
 }
 
+async function publicReq(path) {
+  const res = await fetch(`${BASE}${path}`)
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Error de servidor')
+  return data
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => { syncOfflineQueue().catch(() => {}) })
   if (navigator.onLine) window.setTimeout(() => { syncOfflineQueue().catch(() => {}) }, 1200)
@@ -147,4 +154,9 @@ export const openQRAPI = {
   assignNew:       (id, equipData)      => req('POST',   `/openqr/${id}/assign-new`, equipData),
   unassign:        (id)                 => req('PUT',    `/openqr/${id}/unassign`),
   delete:          (id)                 => req('DELETE', `/openqr/${id}`),
+}
+
+export const publicAPI = {
+  latestByQR:        (id) => publicReq(`/public/qr/${id}/latest-report`),
+  latestByEquipment: (id) => publicReq(`/public/equipment/${id}/latest-report`),
 }

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react'
+import { publicEquipmentUrl, publicQRUrl } from '../lib/publicUrls.js'
 
 export function equipmentQRUrl(qrId) {
-  return `${window.location.origin}/qr/${qrId}`
+  return publicQRUrl(qrId)
 }
 
 export function legacyEquipmentQRUrl(equipmentId) {
-  return `${window.location.origin}/equipo/${equipmentId}`
+  return publicEquipmentUrl(equipmentId)
 }
 
 export function EquipmentQRCanvas({ qrId, text, size = 150 }) {

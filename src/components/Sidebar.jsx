@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { Icon, ICONS } from './UI.jsx'
-import { BrandingContext } from '../lib/branding.js'
+import { BrandingContext, resolveLogoIcon, resolveLogoFull } from '../lib/branding.js'
+import { ThemeContext } from '../App.jsx'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard',    icon: ICONS.dashboard },
@@ -13,6 +14,10 @@ const NAV = [
 
 export default function Sidebar({ active, setActive, collapsed }) {
   const { branding } = useContext(BrandingContext)
+  const { theme } = useContext(ThemeContext)
+  const isDark = theme === 'dark'
+  const { src: iconSrc, filter: iconFilter } = resolveLogoIcon(branding, isDark)
+  const { src: fullSrc, filter: fullFilter } = resolveLogoFull(branding, isDark)
 
   return (
     <aside style={{
@@ -36,39 +41,61 @@ export default function Sidebar({ active, setActive, collapsed }) {
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: collapsed ? '0 14px' : '0 16px',
+        padding: collapsed ? '0 13px' : '0 14px',
         borderBottom: '1px solid var(--border)',
         overflow: 'hidden',
         flexShrink: 0,
       }}>
-        <div style={{
-          width: 30, height: 30,
-          background: 'linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%)',
-          borderRadius: 9,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-          overflow: 'hidden',
-          boxShadow: '0 2px 12px rgba(99,102,241,.4)',
-        }}>
-          {branding.logoDataUrl
-            ? <img src={branding.logoDataUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <Icon path={ICONS.wrench} size={14} stroke="white" strokeWidth={2.2} />
-          }
-        </div>
-        {!collapsed && (
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <span style={{
-              fontWeight: 800, fontSize: 14.5,
-              letterSpacing: '-.025em',
-              display: 'block',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              background: 'linear-gradient(135deg, var(--text) 0%, var(--text-secondary) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>{branding.appName}</span>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: -1, letterSpacing: '.03em', fontWeight: 500 }}>v1.1</p>
+        {collapsed ? (
+          /* Ícono pequeño cuando colapsado */
+          <div style={{
+            width: 30, height: 30,
+            background: iconSrc ? 'transparent' : 'linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%)',
+            borderRadius: 9,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            overflow: 'hidden',
+            boxShadow: iconSrc ? 'none' : '0 2px 12px rgba(99,102,241,.4)',
+          }}>
+            {iconSrc
+              ? <img src={iconSrc} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: iconFilter }} />
+              : <Icon path={ICONS.wrench} size={14} stroke="white" strokeWidth={2.2} />
+            }
           </div>
+        ) : fullSrc ? (
+          /* Logo completo cuando expandido */
+          <img
+            src={fullSrc}
+            alt="logo"
+            style={{ maxWidth: 160, maxHeight: 38, objectFit: 'contain', display: 'block', filter: fullFilter }}
+          />
+        ) : (
+          /* Fallback sin logo: ícono + nombre */
+          <>
+            <div style={{
+              width: 30, height: 30,
+              background: 'linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%)',
+              borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 12px rgba(99,102,241,.4)',
+            }}>
+              <Icon path={ICONS.wrench} size={14} stroke="white" strokeWidth={2.2} />
+            </div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <span style={{
+                fontWeight: 800, fontSize: 14.5,
+                letterSpacing: '-.025em',
+                display: 'block',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                background: 'linear-gradient(135deg, var(--text) 0%, var(--text-secondary) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>{branding.appName}</span>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: -1, letterSpacing: '.03em', fontWeight: 500 }}>v1.1</p>
+            </div>
+          </>
         )}
       </div>
 

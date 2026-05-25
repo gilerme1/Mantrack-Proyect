@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Icon, ICONS, StatusBadge } from '../components/UI.jsx'
 import { BrandingContext } from '../lib/branding.js'
 import { equipmentAPI, openQRAPI } from '../lib/api.js'
+import { publicEquipmentUrl, publicQRUrl } from '../lib/publicUrls.js'
 import useIsMobile from '../hooks/useIsMobile.js'
 
 /* ─── Premium QR renderer ────────────────────────────────────────────
@@ -119,10 +120,8 @@ function QRCanvas({ text, size = 120 }) {
 
 // Opens a printable window with QR label cards
 async function printLabels(equipmentList, logoSrc = null) {
-  const origin = window.location.origin
-
   const cards = await Promise.all(equipmentList.map(async eq => {
-    const url    = `${origin}/equipo/${eq.id}`
+    const url    = publicEquipmentUrl(eq.id)
     const dataUrl = await styledQRDataUrl(url, { size: 280, logoSrc })
     return { eq, dataUrl, url }
   }))
@@ -249,10 +248,9 @@ function OpenQRSection({ isMobile, onOpenEquipment }) {
   const handlePrintOpen = async (list) => {
     if (!list.length) return
     setPrinting(true)
-    const origin = window.location.origin
     const logo   = branding.logoDataUrl || null
     const cards  = await Promise.all(list.map(async qr => {
-      const url     = `${origin}/qr/${qr.id}`
+      const url     = publicQRUrl(qr.id)
       const dataUrl = await styledQRDataUrl(url, { size: 280, logoSrc: logo })
       return { qr, dataUrl, url }
     }))
@@ -380,7 +378,7 @@ function OpenQRSection({ isMobile, onOpenEquipment }) {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(auto-fill,minmax(140px,1fr))', gap: 8 }}>
             {unassigned.map(qr => (
               <div key={qr.id} style={{ background: 'var(--surface)', border: '1.5px dashed var(--border-light)', borderRadius: 12, padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <QRCanvas text={`${window.location.origin}/qr/${qr.id}`} size={isMobile ? 68 : 80} />
+                <QRCanvas text={publicQRUrl(qr.id)} size={isMobile ? 68 : 80} />
                 <div style={{ textAlign: 'center', width: '100%' }}>
                   <p style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {qr.id.slice(0, 10)}…
@@ -422,7 +420,7 @@ function OpenQRSection({ isMobile, onOpenEquipment }) {
             {assigned.map(qr => (
               <div key={qr.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ padding: 4, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', flexShrink: 0 }}>
-                  <QRCanvas text={`${window.location.origin}/qr/${qr.id}`} size={isMobile ? 52 : 60} />
+                  <QRCanvas text={publicQRUrl(qr.id)} size={isMobile ? 52 : 60} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qr.equipment?.name}</p>
@@ -479,7 +477,7 @@ export default function QRPage({ onOpenEquipment }) {
     (e.plate || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const qrURL = (eq) => `${window.location.origin}/equipo/${eq.id}`
+  const qrURL = (eq) => publicEquipmentUrl(eq.id)
   const logo  = branding.logoDataUrl || null
 
   const downloadQR = async (eq) => {

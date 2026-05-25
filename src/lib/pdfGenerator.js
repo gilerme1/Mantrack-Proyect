@@ -198,15 +198,16 @@ async function drawCover(doc, branding, report) {
 
   // ── Logo (inside hero, top-left) ──────────────────────────────────
   let logoBottom = HERO - 14
-  if (branding?.logoDataUrl) {
+  const coverLogo = branding?._coverLogoUrl
+  if (coverLogo) {
     try {
-      const img = await loadImage(branding.logoDataUrl)
+      const img = await loadImage(coverLogo)
       if (img && img.width > 0 && img.height > 0) {
-        const maxW = 46, maxH = 18
+        const maxW = 60, maxH = 20
         const ratio  = Math.min(maxW / img.width, maxH / img.height, 1)
         const lw_mm  = Math.max(8, Math.round(img.width  * ratio))
         const lh_mm  = Math.max(5, Math.round(img.height * ratio))
-        doc.addImage(branding.logoDataUrl, getImageFormat(branding.logoDataUrl),
+        doc.addImage(coverLogo, getImageFormat(coverLogo),
                      ML, 11, lw_mm, lh_mm, undefined, 'FAST')
         logoBottom = 11 + lh_mm + 4
       }
@@ -640,9 +641,10 @@ function drawSignatures(doc, report, startY) {
 ───────────────────────────────────────────────────────────────────────── */
 export async function generateReportPDF({ report, branding }) {
   let pdfBranding = branding
-  if (branding?.logoDataUrl) {
-    const processed = await transparentLogoDataUrl(branding.logoDataUrl, 512)
-    pdfBranding = { ...branding, logoDataUrl: processed || branding.logoDataUrl }
+  const coverLogoSrc = branding?.logoFullDataUrl || branding?.logoDataUrl
+  if (coverLogoSrc) {
+    const processed = await transparentLogoDataUrl(coverLogoSrc, 512)
+    pdfBranding = { ...branding, _coverLogoUrl: processed || coverLogoSrc }
   }
 
   const doc       = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
